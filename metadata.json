@@ -1,0 +1,5 @@
+{
+  "name": "SmartTimeline",
+  "description": "A powerful React calendar timeline application integrated with Gemini 2.5 for intelligent schedule management and analysis. Features drag-and-drop scheduling, resource grouping, and natural language event creation.",
+  "requestFramePermissions": []
+}
