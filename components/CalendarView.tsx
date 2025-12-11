@@ -12,6 +12,7 @@ interface CalendarViewProps {
 
 const CalendarView: React.FC<CalendarViewProps> = ({ 
   items, 
+  groups,
   viewMode,
   onItemSelect,
   onDateClick
@@ -112,23 +113,35 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                  {dayEvents.length > 0 && <span className="text-[10px] text-slate-400 font-medium">{dayEvents.length} events</span>}
               </div>
 
-              <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto no-scrollbar">
+              <div className="flex-1 flex flex-col gap-2 overflow-y-auto no-scrollbar pt-1">
                 {dayEvents.map(event => {
                    const count = event.miniEvents?.length || 0;
                    const max = event.maxMiniEvents || 0;
                    const isFull = max > 0 && count >= max;
+                   const group = groups.find(g => g.id === event.group);
                    
                    return (
                      <div 
                        key={event.id}
                        onClick={(e) => { e.stopPropagation(); onItemSelect(event); }}
-                       className={`text-xs p-1.5 rounded border-l-4 shadow-sm cursor-pointer hover:brightness-105 hover:translate-x-0.5 transition-all flex flex-col group ${event.className || 'bg-blue-100 border-blue-500 text-blue-800'}`}
+                       className={`text-xs p-2 rounded-md border-l-4 shadow-sm cursor-pointer hover:shadow-md hover:translate-x-0.5 transition-all flex flex-col group ${event.className || 'bg-blue-100 border-blue-500 text-blue-900'}`}
                      >
-                       <span className="truncate font-semibold">{event.title}</span>
-                       <div className="flex justify-between items-center mt-0.5">
-                            <span className="text-[10px] opacity-80">{moment(event.start_time).format('h:mma')}</span>
+                       {/* Resource Title */}
+                       <div className="text-[9px] font-bold uppercase tracking-wider opacity-70 mb-0.5">
+                         {group?.title || 'Unknown Resource'}
+                       </div>
+                       
+                       {/* Event Title */}
+                       <span className="truncate font-bold text-sm leading-tight">{event.title}</span>
+                       
+                       <div className="flex justify-between items-end mt-1.5">
+                            <span className="text-[10px] opacity-80 font-medium">{moment(event.start_time).format('h:mma')}</span>
                             {max > 0 && (
-                                <span className={`text-[9px] px-1 rounded-full ${isFull ? 'bg-black/20 text-white' : 'bg-white/40'} `}>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm border ${
+                                    isFull 
+                                    ? 'bg-red-500 text-white border-red-600' 
+                                    : 'bg-emerald-500 text-white border-emerald-600'
+                                }`}>
                                 {count}/{max}
                                 </span>
                             )}

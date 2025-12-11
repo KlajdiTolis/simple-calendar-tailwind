@@ -66,26 +66,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     });
   };
 
-  // Handle Background Click (Create Event)
-  const handleCanvasClick = (e: React.MouseEvent) => {
-    if (dragState) return; // Don't trigger if finishing a drag
-    if (!containerRef.current) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left - SIDEBAR_WIDTH;
-    const y = e.clientY - rect.top - HEADER_HEIGHT;
-
-    // Check if click is in valid area
-    if (x < 0 || y < 0) return;
-
-    // Calculate Group
-    const groupIndex = Math.floor(y + containerRef.current.scrollTop / GROUP_HEIGHT); // Adjust for scroll if needed (though main div scrolls)
-    // Actually, containerRef handles the scroll of the grid usually, let's assume flat for now or adjust logic
-    // Refined: The click is relative to the scrollable container
-    
-    // Simpler approach: We attach click handler to the grid container
-  };
-
   // Handle Mouse Move (Global)
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -96,7 +76,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
          // Determine row
          // Offset y by header
          const relativeY = e.clientY - rect.top - HEADER_HEIGHT; 
-         // Allow some buffer for scrolling (not implemented deep scroll here for simplicity, assuming fixed height or overflow-y on parent)
          const groupIndex = Math.floor(relativeY / GROUP_HEIGHT);
          
          if (groupIndex >= 0 && groupIndex < groups.length) {
@@ -107,7 +86,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                  setDragState(prev => prev ? { ...prev, currentX: e.clientX } : null);
              }
          } else {
-             // Just update X if out of vertical bounds (keep last valid group or just move time)
              setDragState(prev => prev ? { ...prev, currentX: e.clientX } : null);
          }
       }
@@ -272,7 +250,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                   }
               }
 
-              // Rendering bounds check (optional optimization)
+              // Rendering bounds check
               if (left + width < -50 || left > totalWidth + 50) return null;
 
               // Calculate mini event progress
@@ -285,7 +263,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                   key={item.id}
                   onMouseDown={(e) => handleDragStart(e, item)}
                   onClick={(e) => { e.stopPropagation(); if(!isDragging) onItemSelect(item); }}
-                  className={`absolute rounded-lg px-3 py-2 text-xs text-white overflow-hidden shadow-sm transition-all cursor-pointer border-l-4 group
+                  className={`absolute rounded-lg px-2 py-1.5 text-xs text-white overflow-hidden shadow-sm transition-all cursor-pointer border-l-4 group
                     ${item.className || 'bg-blue-500 border-blue-700'} 
                     ${isDragging ? 'z-50 shadow-2xl scale-105 opacity-90 ring-4 ring-indigo-400/30' : 'z-10 hover:shadow-md hover:brightness-105'}
                   `}
@@ -296,22 +274,28 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                     height: `${GROUP_HEIGHT - 16}px`
                   }}
                 >
-                  <div className="flex flex-col h-full justify-between">
-                      <div className="font-bold truncate text-sm leading-tight drop-shadow-sm">{item.title}</div>
+                  <div className="flex flex-col h-full relative">
+                      {/* Title */}
+                      <div className="font-bold truncate text-sm leading-tight drop-shadow-md pr-8">{item.title}</div>
                       
-                      <div className="flex justify-between items-end">
-                         <div className="opacity-90 truncate text-[10px] font-medium tracking-wide">
-                             {moment(item.start_time).format('h:mm A')} - {moment(item.end_time).format('h:mm A')}
+                      {/* Footer Info */}
+                      <div className="mt-auto flex justify-between items-end">
+                         {/* Time - Smaller priority */}
+                         <div className="opacity-80 truncate text-[10px] font-medium">
+                             {moment(item.start_time).format('h:mm A')}
                          </div>
-                         
-                         {maxMini > 0 && (
-                             <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold backdrop-blur-sm border border-white/20
-                                 ${isFull ? 'bg-red-500/20 text-white' : 'bg-black/10 text-white'}
-                             `}>
-                                 {currentMini}/{maxMini}
-                             </div>
-                         )}
                       </div>
+
+                      {/* Floating Badge for Max MiniEvents - Prominent */}
+                      {maxMini > 0 && (
+                          <div className={`absolute bottom-0 right-0 mb-1 mr-1 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-md border ${
+                              isFull 
+                              ? 'bg-red-600 text-white border-red-700' 
+                              : 'bg-emerald-500 text-white border-emerald-600'
+                          }`}>
+                              {currentMini}/{maxMini}
+                          </div>
+                      )}
                   </div>
                 </div>
               );
