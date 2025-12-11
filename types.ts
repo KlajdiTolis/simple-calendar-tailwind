@@ -1,17 +1,11 @@
 import React from 'react';
 
-export interface MiniEvent {
-  id: string;
-  title: string;
-  description?: string;
-  duration: string;
-}
-
 export interface TimelineGroup {
   id: number;
   title: string;
-  category: 'Development' | 'Design' | 'Marketing' | 'Management';
-  color: string;
+  category: string;
+  color: string; // Used for sidebar/avatar
+  eventClassName: string; // Used for the actual event blocks
 }
 
 export interface TimelineItem {
@@ -23,8 +17,7 @@ export interface TimelineItem {
   description?: string;
   className?: string;
   itemProps?: React.HTMLAttributes<HTMLDivElement>;
-  maxMiniEvents?: number;
-  miniEvents?: MiniEvent[];
+  operationRoom?: string;
 }
 
 export enum GeminiActionType {

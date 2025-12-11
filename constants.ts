@@ -2,11 +2,48 @@ import { TimelineGroup, TimelineItem } from './types';
 import moment from 'moment';
 
 export const INITIAL_GROUPS: TimelineGroup[] = [
-  { id: 1, title: 'Doctor 1', category: 'Development', color: 'bg-blue-100 text-blue-800' },
-  { id: 2, title: 'Doctor 2', category: 'Development', color: 'bg-indigo-100 text-indigo-800' },
-  { id: 3, title: 'Doctor 3', category: 'Design', color: 'bg-pink-100 text-pink-800' },
-  { id: 4, title: 'Doctor 4', category: 'Management', color: 'bg-amber-100 text-amber-800' },
-  { id: 5, title: 'Doctor 5', category: 'Development', color: 'bg-green-100 text-green-800' },
+  { 
+    id: 1, 
+    title: 'Dr. Arben Kodra', 
+    category: 'General Surgery', 
+    color: 'bg-blue-100 text-blue-800',
+    eventClassName: 'bg-blue-600 text-white border-blue-700'
+  },
+  { 
+    id: 2, 
+    title: 'Dr. Ilir Dervishi', 
+    category: 'Cardiology', 
+    color: 'bg-red-100 text-red-800',
+    eventClassName: 'bg-red-600 text-white border-red-700'
+  },
+  { 
+    id: 3, 
+    title: 'Dr. Gentiana Hoxha', 
+    category: 'Neurology', 
+    color: 'bg-purple-100 text-purple-800',
+    eventClassName: 'bg-purple-600 text-white border-purple-700'
+  },
+  { 
+    id: 4, 
+    title: 'Dr. Blendi Shala', 
+    category: 'Orthopedics', 
+    color: 'bg-green-100 text-green-800',
+    eventClassName: 'bg-green-600 text-white border-green-700'
+  },
+  { 
+    id: 5, 
+    title: 'Dr. Arlinda Kuqi', 
+    category: 'Pediatrics', 
+    color: 'bg-yellow-100 text-yellow-800',
+    eventClassName: 'bg-yellow-500 text-white border-yellow-600'
+  },
+  { 
+    id: 6, 
+    title: 'Dr. Marco Bellini', 
+    category: 'General Surgery', 
+    color: 'bg-cyan-100 text-cyan-800',
+    eventClassName: 'bg-cyan-600 text-white border-cyan-700'
+  },
 ];
 
 const now = moment().startOf('hour');
@@ -15,37 +52,31 @@ export const INITIAL_ITEMS: TimelineItem[] = [
   {
     id: 1,
     group: 1,
-    title: 'Sprint Planning',
+    title: 'Appendectomy',
     start_time: now.clone().add(-2, 'hour').valueOf(),
     end_time: now.clone().add(1, 'hour').valueOf(),
-    description: 'Bi-weekly sprint planning meeting',
-    className: 'bg-blue-500 text-white border-blue-600',
-    maxMiniEvents: 5,
-    miniEvents: [
-      { id: 'm1', title: 'Review Backlog', duration: '30m', description: 'Check jira' },
-      { id: 'm2', title: 'Assign Tasks', duration: '30m', description: 'Team assignment' }
-    ]
+    description: 'Patient: John Doe (45M). Routine appendectomy.',
+    className: 'bg-blue-600 text-white border-blue-700',
+    operationRoom: 'OR-1'
   },
   {
     id: 2,
     group: 2,
-    title: 'API Migration',
+    title: 'Coronary Bypass',
     start_time: now.clone().add(1, 'day').valueOf(),
     end_time: now.clone().add(1, 'day').add(4, 'hour').valueOf(),
-    description: 'Migrating legacy endpoints to v2',
-    className: 'bg-indigo-500 text-white border-indigo-600',
-    maxMiniEvents: 3,
-    miniEvents: []
+    description: 'Patient: Jane Smith (62F). Triple bypass.',
+    className: 'bg-red-600 text-white border-red-700',
+    operationRoom: 'OR-3'
   },
   {
     id: 3,
-    group: 3,
-    title: 'Design Review',
+    group: 4,
+    title: 'Knee Replacement',
     start_time: now.clone().add(2, 'day').valueOf(),
     end_time: now.clone().add(2, 'day').add(2, 'hour').valueOf(),
-    description: 'Review new dashboard mocks',
-    className: 'bg-pink-500 text-white border-pink-600',
-    maxMiniEvents: 4,
-    miniEvents: []
+    description: 'Patient: Robert Brown (70M). Left knee.',
+    className: 'bg-green-600 text-white border-green-700',
+    operationRoom: 'OR-2'
   },
 ];

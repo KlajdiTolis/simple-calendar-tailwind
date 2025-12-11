@@ -51,6 +51,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return days;
   }, [currentDate, viewMode]);
 
+  const totalWeeks = Math.ceil(calendarData.length / 7);
+
   const goToToday = () => setCurrentDate(moment());
   const next = () => setCurrentDate(curr => curr.clone().add(1, viewMode));
   const prev = () => setCurrentDate(curr => curr.clone().subtract(1, viewMode));
@@ -92,7 +94,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       </div>
 
       {/* Calendar Grid */}
-      <div className={`grid grid-cols-7 flex-1 bg-slate-200 gap-px overflow-y-auto ${isMonthView ? 'grid-rows-5 md:grid-rows-6' : 'grid-rows-1'}`}>
+      <div 
+        className="grid grid-cols-7 flex-1 bg-slate-200 gap-px overflow-y-auto"
+        style={{
+            gridTemplateRows: isMonthView ? `repeat(${totalWeeks}, minmax(120px, 1fr))` : '1fr'
+        }}
+      >
         {calendarData.map((dayItem) => {
           const isCurrentMonth = isMonthView ? dayItem.month() === currentDate.month() : true;
           const isToday = dayItem.isSame(moment(), 'day');
@@ -104,20 +111,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({
               onClick={() => onDateClick(dayItem)}
               className={`bg-white p-2 transition-colors hover:bg-slate-50 cursor-pointer flex flex-col gap-1 ${
                   !isCurrentMonth ? 'bg-slate-50/50 text-slate-400' : ''
-              } ${!isMonthView ? 'min-h-[400px]' : 'min-h-[100px]'}`}
+              }`}
             >
               <div className="flex justify-between items-start mb-1">
                  <div className={`flex flex-col items-center justify-center w-8 h-8 rounded-full ${isToday ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-700'}`}>
                     <span className="text-sm font-medium">{dayItem.date()}</span>
                  </div>
-                 {dayEvents.length > 0 && <span className="text-[10px] text-slate-400 font-medium">{dayEvents.length} events</span>}
+                 {dayEvents.length > 0 && <span className="text-[10px] text-slate-400 font-medium">{dayEvents.length} ops</span>}
               </div>
 
               <div className="flex-1 flex flex-col gap-2 overflow-y-auto no-scrollbar pt-1">
                 {dayEvents.map(event => {
-                   const count = event.miniEvents?.length || 0;
-                   const max = event.maxMiniEvents || 0;
-                   const isFull = max > 0 && count >= max;
                    const group = groups.find(g => g.id === event.group);
                    
                    return (
@@ -127,8 +131,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                        className={`text-xs p-2 rounded-md border-l-4 shadow-sm cursor-pointer hover:shadow-md hover:translate-x-0.5 transition-all flex flex-col group ${event.className || 'bg-blue-100 border-blue-500 text-blue-900'}`}
                      >
                        {/* Resource Title */}
-                       <div className="text-[9px] font-bold uppercase tracking-wider opacity-70 mb-0.5">
-                         {group?.title || 'Unknown Resource'}
+                       <div className="text-[9px] font-bold uppercase tracking-wider opacity-70 mb-0.5 truncate">
+                         {group?.title || 'Unknown Dr.'}
                        </div>
                        
                        {/* Event Title */}
@@ -136,13 +140,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                        
                        <div className="flex justify-between items-end mt-1.5">
                             <span className="text-[10px] opacity-80 font-medium">{moment(event.start_time).format('h:mma')}</span>
-                            {max > 0 && (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm border ${
-                                    isFull 
-                                    ? 'bg-red-500 text-white border-red-600' 
-                                    : 'bg-emerald-500 text-white border-emerald-600'
-                                }`}>
-                                {count}/{max}
+                            {event.operationRoom && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm bg-white/30 border border-white/20">
+                                    {event.operationRoom}
                                 </span>
                             )}
                        </div>

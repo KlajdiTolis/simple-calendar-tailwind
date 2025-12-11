@@ -6,20 +6,21 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzeSchedule = async (groups: TimelineGroup[], items: TimelineItem[]): Promise<string> => {
   const scheduleContext = JSON.stringify({
-    groups: groups.map(g => ({ id: g.id, name: g.title, category: g.category })),
-    items: items.map(i => ({
-      group_id: i.group,
+    doctors: groups.map(g => ({ id: g.id, name: g.title, speciality: g.category })),
+    operations: items.map(i => ({
+      doctor_id: i.group,
       title: i.title,
+      room: i.operationRoom,
       start: moment(i.start_time).format('YYYY-MM-DD HH:mm'),
       end: moment(i.end_time).format('YYYY-MM-DD HH:mm'),
-      description: i.description
+      details: i.description
     }))
   });
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `You are a helpful project manager assistant. Analyze the following schedule data and provide a brief, insightful summary of the workload, potential conflicts, and suggestions for optimization. Keep it under 150 words.
+      contents: `You are a medical scheduling assistant for a busy hospital. Analyze the following surgery schedule and provide a brief, insightful summary of the workload, potential doctor fatigue/conflicts, and utilization of operation rooms. Keep it under 150 words.
       
       Schedule Data:
       ${scheduleContext}`,
@@ -36,32 +37,32 @@ export const createEventFromNaturalLanguage = async (
   prompt: string,
   groups: TimelineGroup[]
 ): Promise<{ text: string; newItems: TimelineItem[] }> => {
-  const groupContext = JSON.stringify(groups.map(g => ({ id: g.id, name: g.title })));
+  const groupContext = JSON.stringify(groups.map(g => ({ id: g.id, name: g.title, speciality: g.category })));
   const now = moment().format('YYYY-MM-DD HH:mm');
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `Current Time: ${now}.
-      Available Groups: ${groupContext}.
+      Available Doctors: ${groupContext}.
       User Request: "${prompt}"
       
-      Create a JSON object for the requested event(s). Map the event to the most appropriate group ID based on the name.
+      Create a JSON object for the requested operation(s). Map the operation to the most appropriate doctor based on their speciality (e.g., heart -> Cardiology).
       Calculate start_time and end_time as Unix timestamps (numbers) based on the "Current Time".
-      If the duration isn't specified, assume 1 hour.
-      If the group isn't clear, pick the most relevant one or default to the first one.
+      If the duration isn't specified, assume 2 hours for standard operations.
+      Assign a realistic Operation Room (OR-1 to OR-4) if not specified.
       
       Return a JSON object with this schema:
       {
         "responseMessage": "A short confirmation message for the user",
         "items": [
           {
-            "title": "Event Title",
-            "group": 1, // The ID of the group
+            "title": "Operation Title",
+            "group": 1, // The ID of the doctor
             "start_time": 1234567890000,
             "end_time": 1234567890000,
-            "description": "Optional description",
-            "className": "bg-purple-500 text-white border-purple-600" // Suggest a tailwind class color based on context (e.g. red for urgent, blue for dev)
+            "description": "Patient details or notes",
+            "operationRoom": "OR-1"
           }
         ]
       }`,
@@ -81,7 +82,7 @@ export const createEventFromNaturalLanguage = async (
                   start_time: { type: Type.NUMBER },
                   end_time: { type: Type.NUMBER },
                   description: { type: Type.STRING },
-                  className: { type: Type.STRING }
+                  operationRoom: { type: Type.STRING }
                 }
               }
             }
@@ -92,14 +93,18 @@ export const createEventFromNaturalLanguage = async (
 
     const result = JSON.parse(response.text || "{}");
     
-    // Assign random IDs since the AI can't know the next ID
-    const newItemsWithIds = (result.items || []).map((item: any) => ({
-      ...item,
-      id: Math.floor(Math.random() * 100000) + 1000, // Simple random ID
-    }));
+    // Assign random IDs and apply doctor's specific color
+    const newItemsWithIds = (result.items || []).map((item: any) => {
+      const assignedGroup = groups.find(g => g.id === item.group);
+      return {
+        ...item,
+        id: Math.floor(Math.random() * 100000) + 1000,
+        className: assignedGroup ? assignedGroup.eventClassName : 'bg-slate-500 text-white'
+      };
+    });
 
     return {
-      text: result.responseMessage || "Events created.",
+      text: result.responseMessage || "Operations scheduled.",
       newItems: newItemsWithIds
     };
 

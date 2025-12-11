@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import TimelineView from './components/TimelineView';
 import CalendarView from './components/CalendarView';
 import AssistantPanel from './components/AssistantPanel';
-import { CreateEventModal, MiniEventManagerModal } from './components/EventModals';
+import { CreateEventModal, EditEventModal } from './components/EventModals';
 import { INITIAL_GROUPS, INITIAL_ITEMS } from './constants';
 import { TimelineItem } from './types';
 import moment from 'moment';
@@ -21,7 +21,7 @@ const App = () => {
   const [preselectedGroupId, setPreselectedGroupId] = useState<number | undefined>(undefined);
   const [preselectedTime, setPreselectedTime] = useState<string | undefined>(undefined);
   
-  const [isMiniEventModalOpen, setIsMiniEventModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const toggleAssistant = () => setIsAssistantOpen(!isAssistantOpen);
 
@@ -49,20 +49,25 @@ const App = () => {
       end_time: newItem.end_time!,
       description: newItem.description,
       className: newItem.className,
-      maxMiniEvents: newItem.maxMiniEvents,
-      miniEvents: []
+      operationRoom: newItem.operationRoom
     };
     setItems(prev => [...prev, event]);
   };
 
   const handleEventSelect = (event: TimelineItem) => {
     setSelectedEvent(event);
-    setIsMiniEventModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleUpdateEvent = (updatedEvent: TimelineItem) => {
     setItems(prev => prev.map(i => i.id === updatedEvent.id ? updatedEvent : i));
-    setSelectedEvent(updatedEvent); // Update the local state for the modal
+    setSelectedEvent(updatedEvent);
+  };
+
+  const handleDeleteEvent = (id: number) => {
+      setItems(prev => prev.filter(i => i.id !== id));
+      setIsEditModalOpen(false);
+      setSelectedEvent(null);
   };
 
   // Drag and Drop handler (Only for Timeline view)
@@ -103,8 +108,8 @@ const App = () => {
                 </svg>
             </div>
             <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-800">SmartTimeline</h1>
-                <p className="text-xs text-slate-500 font-medium">Interactive Resource Scheduler</p>
+                <h1 className="text-xl font-bold tracking-tight text-slate-800">Doctor Schedule Overview</h1>
+                <p className="text-xs text-slate-500 font-medium">KEIT Day Hospital</p>
             </div>
         </div>
 
@@ -136,7 +141,7 @@ const App = () => {
                 className="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm items-center gap-2"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                New Event
+                Schedule Operation
             </button>
             <button 
                 onClick={toggleAssistant}
@@ -200,11 +205,12 @@ const App = () => {
       />
 
       {selectedEvent && (
-        <MiniEventManagerModal
-          isOpen={isMiniEventModalOpen}
-          onClose={() => { setIsMiniEventModalOpen(false); setSelectedEvent(null); }}
+        <EditEventModal
+          isOpen={isEditModalOpen}
+          onClose={() => { setIsEditModalOpen(false); setSelectedEvent(null); }}
           event={selectedEvent}
           onUpdateEvent={handleUpdateEvent}
+          onDeleteEvent={handleDeleteEvent}
         />
       )}
     </div>

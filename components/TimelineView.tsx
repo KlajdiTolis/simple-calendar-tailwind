@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import moment from 'moment';
 import { TimelineGroup, TimelineItem } from '../types';
 
@@ -23,19 +23,12 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   onBackgroundClick
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [viewStart, setViewStart] = useState(moment().startOf('day').add(8, 'hours')); // Start at 8 AM
-  
-  // State for drag and drop
-  const [dragState, setDragState] = useState<{
-    itemId: number | null;
-    startX: number;
-    originalStartTime: number;
-    currentX: number;
-    originalGroupId: number;
-    currentGroupId: number;
-  } | null>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const scrollableRef = useRef<HTMLDivElement>(null);
 
-  const totalHours = 16; // Show 16 hours
+  const [viewStart, setViewStart] = useState(moment().startOf('day')); // Start at 00:00
+  
+  const totalHours = 24; // Show 24 hours
   const totalWidth = totalHours * HOUR_WIDTH;
 
   // Generate hour markers
@@ -48,74 +41,16 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   }, [viewStart, totalHours]);
 
   // Navigation
-  const handleToday = () => setViewStart(moment().startOf('day').add(8, 'hours'));
-  const handlePrev = () => setViewStart(prev => prev.clone().subtract(4, 'hours'));
-  const handleNext = () => setViewStart(prev => prev.clone().add(4, 'hours'));
+  const handleToday = () => setViewStart(moment().startOf('day'));
+  const handlePrev = () => setViewStart(prev => prev.clone().subtract(1, 'day'));
+  const handleNext = () => setViewStart(prev => prev.clone().add(1, 'day'));
 
-  // Handle Drag Start
-  const handleDragStart = (e: React.MouseEvent, item: TimelineItem) => {
-    e.stopPropagation();
-    
-    setDragState({
-      itemId: item.id,
-      startX: e.clientX,
-      originalStartTime: item.start_time,
-      currentX: e.clientX,
-      originalGroupId: item.group,
-      currentGroupId: item.group
-    });
+  // Sync scroll
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      if (headerRef.current) {
+          headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+      }
   };
-
-  // Handle Mouse Move (Global)
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragState) return;
-      
-      if (containerRef.current) {
-         const rect = containerRef.current.getBoundingClientRect();
-         // Determine row
-         // Offset y by header
-         const relativeY = e.clientY - rect.top - HEADER_HEIGHT; 
-         const groupIndex = Math.floor(relativeY / GROUP_HEIGHT);
-         
-         if (groupIndex >= 0 && groupIndex < groups.length) {
-             const targetGroup = groups[groupIndex];
-             if (targetGroup.id !== dragState.currentGroupId) {
-                 setDragState(prev => prev ? { ...prev, currentX: e.clientX, currentGroupId: targetGroup.id } : null);
-             } else {
-                 setDragState(prev => prev ? { ...prev, currentX: e.clientX } : null);
-             }
-         } else {
-             setDragState(prev => prev ? { ...prev, currentX: e.clientX } : null);
-         }
-      }
-    };
-
-    const handleMouseUp = () => {
-      if (dragState && dragState.itemId) {
-        const pixelDelta = dragState.currentX - dragState.startX;
-        const timeDeltaMs = (pixelDelta / HOUR_WIDTH) * 60 * 60 * 1000;
-        
-        let newStart = dragState.originalStartTime + timeDeltaMs;
-        // Snap to 15 mins
-        const remainder = newStart % (15 * 60 * 1000);
-        newStart = newStart - remainder;
-
-        onItemMove(dragState.itemId, newStart, dragState.currentGroupId);
-        setDragState(null);
-      }
-    };
-
-    if (dragState) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [dragState, groups, onItemMove]);
 
   const timeToPixels = (timestamp: number) => {
     const startMs = viewStart.valueOf();
@@ -124,7 +59,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   };
 
   const handleGridClick = (e: React.MouseEvent) => {
-      if (dragState) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -147,11 +81,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
           <div className="font-bold text-lg text-slate-800">{viewStart.format('MMMM Do, YYYY')}</div>
           <div className="flex gap-2">
-            <button onClick={handlePrev} className="p-1.5 hover:bg-slate-100 rounded text-slate-600">
+            <button onClick={handlePrev} className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Previous Day">
                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <button onClick={handleToday} className="px-3 py-1.5 text-sm font-medium bg-slate-100 text-slate-700 rounded hover:bg-slate-200">Today</button>
-            <button onClick={handleNext} className="p-1.5 hover:bg-slate-100 rounded text-slate-600">
+            <button onClick={handleNext} className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Next Day">
                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
@@ -160,13 +94,13 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       {/* Timeline Header Row */}
       <div className="flex border-b border-slate-200 bg-slate-50 relative z-20 shadow-sm">
         <div className="flex-none border-r border-slate-200 p-2 font-bold text-slate-500 text-xs uppercase tracking-wider flex items-center justify-center bg-slate-50" style={{ width: SIDEBAR_WIDTH, height: HEADER_HEIGHT }}>
-          Resources
+          Doctors
         </div>
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 overflow-hidden relative" ref={headerRef}>
           <div className="flex" style={{ width: totalWidth, height: HEADER_HEIGHT }}>
             {hours.map((h, i) => (
               <div key={i} className="border-l border-slate-200 px-2 pt-2 text-xs font-semibold text-slate-400" style={{ width: HOUR_WIDTH }}>
-                {h.format('h A')}
+                {h.format('HH:mm')}
               </div>
             ))}
           </div>
@@ -176,13 +110,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       {/* Main Body */}
       <div className="flex-1 flex overflow-y-auto relative">
         {/* Sidebar */}
-        <div className="flex-none bg-white border-r border-slate-200 z-10 sticky left-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+        <div className="flex-none bg-white border-r border-slate-200 z-10 sticky left-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] h-min">
           {groups.map((group) => (
             <div 
               key={group.id} 
-              className={`flex items-center px-4 border-b border-slate-100 transition-colors ${
-                 dragState?.currentGroupId === group.id ? 'bg-indigo-50/50' : 'bg-white'
-              }`}
+              className="flex items-center px-4 border-b border-slate-100 bg-white"
               style={{ height: GROUP_HEIGHT, width: SIDEBAR_WIDTH }}
             >
               <div className={`w-3 h-3 rounded-full mr-3 shadow-sm ${group.color.split(' ')[0].replace('bg-', 'bg-')}`}></div>
@@ -192,17 +124,23 @@ const TimelineView: React.FC<TimelineViewProps> = ({
               </div>
             </div>
           ))}
+          {/* Fill remaining sidebar space */}
+          <div className="flex-1 bg-slate-50/30"></div>
         </div>
 
         {/* Scrollable Timeline Grid */}
-        <div className="flex-1 overflow-x-auto relative no-scrollbar bg-slate-50/30" style={{ cursor: dragState ? 'grabbing' : 'default' }}>
+        <div 
+            className="flex-1 overflow-x-auto relative no-scrollbar bg-slate-50/30" 
+            ref={scrollableRef}
+            onScroll={handleScroll}
+        >
           <div 
-            style={{ width: totalWidth, height: groups.length * GROUP_HEIGHT, position: 'relative' }}
+            style={{ width: totalWidth, minHeight: '100%', position: 'relative' }}
             onMouseDown={handleGridClick}
           >
             
             {/* Background Grid */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
+            <div className="absolute inset-0 z-0 pointer-events-none h-full">
               {/* Vertical Lines */}
               {hours.map((_, i) => (
                 <div 
@@ -233,39 +171,19 @@ const TimelineView: React.FC<TimelineViewProps> = ({
               const groupIndex = groups.findIndex(g => g.id === item.group);
               if (groupIndex === -1) return null;
 
-              const isDragging = dragState?.itemId === item.id;
-              
-              let left = timeToPixels(item.start_time);
-              let top = groupIndex * GROUP_HEIGHT + 8; 
+              const left = timeToPixels(item.start_time);
+              const top = groupIndex * GROUP_HEIGHT + 8; 
               const width = ((item.end_time - item.start_time) / (1000 * 60 * 60)) * HOUR_WIDTH;
-
-              // Visual update during drag
-              if (isDragging && dragState) {
-                  const pixelOffset = dragState.currentX - dragState.startX;
-                  left += pixelOffset;
-                  
-                  const targetGroupIndex = groups.findIndex(g => g.id === dragState.currentGroupId);
-                  if (targetGroupIndex !== -1) {
-                      top = targetGroupIndex * GROUP_HEIGHT + 8;
-                  }
-              }
 
               // Rendering bounds check
               if (left + width < -50 || left > totalWidth + 50) return null;
 
-              // Calculate mini event progress
-              const currentMini = item.miniEvents?.length || 0;
-              const maxMini = item.maxMiniEvents || 0;
-              const isFull = maxMini > 0 && currentMini >= maxMini;
-
               return (
                 <div
                   key={item.id}
-                  onMouseDown={(e) => handleDragStart(e, item)}
-                  onClick={(e) => { e.stopPropagation(); if(!isDragging) onItemSelect(item); }}
-                  className={`absolute rounded-lg px-2 py-1.5 text-xs text-white overflow-hidden shadow-sm transition-all cursor-pointer border-l-4 group
+                  onClick={(e) => { e.stopPropagation(); onItemSelect(item); }}
+                  className={`absolute rounded-lg px-2 py-1.5 text-xs text-white overflow-hidden shadow-sm transition-all cursor-pointer border-l-4 group z-10 hover:shadow-md hover:brightness-105
                     ${item.className || 'bg-blue-500 border-blue-700'} 
-                    ${isDragging ? 'z-50 shadow-2xl scale-105 opacity-90 ring-4 ring-indigo-400/30' : 'z-10 hover:shadow-md hover:brightness-105'}
                   `}
                   style={{
                     left: `${left}px`,
@@ -276,24 +194,20 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                 >
                   <div className="flex flex-col h-full relative">
                       {/* Title */}
-                      <div className="font-bold truncate text-sm leading-tight drop-shadow-md pr-8">{item.title}</div>
+                      <div className="font-bold truncate text-sm leading-tight drop-shadow-md pr-2">{item.title}</div>
                       
                       {/* Footer Info */}
                       <div className="mt-auto flex justify-between items-end">
-                         {/* Time - Smaller priority */}
-                         <div className="opacity-80 truncate text-[10px] font-medium">
-                             {moment(item.start_time).format('h:mm A')}
+                         <div className="opacity-90 truncate text-[10px] font-medium flex items-center gap-1">
+                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                             {moment(item.start_time).format('HH:mm')} - {moment(item.end_time).format('HH:mm')}
                          </div>
                       </div>
 
-                      {/* Floating Badge for Max MiniEvents - Prominent */}
-                      {maxMini > 0 && (
-                          <div className={`absolute bottom-0 right-0 mb-1 mr-1 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-md border ${
-                              isFull 
-                              ? 'bg-red-600 text-white border-red-700' 
-                              : 'bg-emerald-500 text-white border-emerald-600'
-                          }`}>
-                              {currentMini}/{maxMini}
+                      {/* Operation Room Badge */}
+                      {item.operationRoom && (
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/20 border border-white/30 backdrop-blur-sm shadow-sm uppercase tracking-wider">
+                              {item.operationRoom}
                           </div>
                       )}
                   </div>
