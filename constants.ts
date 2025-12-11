@@ -2,11 +2,11 @@ import { TimelineGroup, TimelineItem } from './types';
 import moment from 'moment';
 
 export const INITIAL_GROUPS: TimelineGroup[] = [
-  { id: 1, title: 'Frontend Team', category: 'Development', color: 'bg-blue-100 text-blue-800' },
-  { id: 2, title: 'Backend Team', category: 'Development', color: 'bg-indigo-100 text-indigo-800' },
-  { id: 3, title: 'UI/UX Design', category: 'Design', color: 'bg-pink-100 text-pink-800' },
-  { id: 4, title: 'Product Mgmt', category: 'Management', color: 'bg-amber-100 text-amber-800' },
-  { id: 5, title: 'QA Team', category: 'Development', color: 'bg-green-100 text-green-800' },
+  { id: 1, title: 'Doctor 1', category: 'Development', color: 'bg-blue-100 text-blue-800' },
+  { id: 2, title: 'Doctor 2', category: 'Development', color: 'bg-indigo-100 text-indigo-800' },
+  { id: 3, title: 'Doctor 3', category: 'Design', color: 'bg-pink-100 text-pink-800' },
+  { id: 4, title: 'Doctor 4', category: 'Management', color: 'bg-amber-100 text-amber-800' },
+  { id: 5, title: 'Doctor 5', category: 'Development', color: 'bg-green-100 text-green-800' },
 ];
 
 const now = moment().startOf('hour');
