@@ -1,5 +1,16 @@
 import React from 'react';
 
+export interface MiniEvent {
+  id: string;
+  title: string; // Operation Name
+  patientName?: string;
+  time?: string; // Legacy/Display time
+  startTime?: string; // Start time of operation (HH:mm)
+  endTime?: string;   // End time of operation (HH:mm)
+  operationRoom?: string;
+  description?: string;
+}
+
 export interface TimelineGroup {
   id: number;
   title: string;
@@ -18,6 +29,11 @@ export interface TimelineItem {
   className?: string;
   itemProps?: React.HTMLAttributes<HTMLDivElement>;
   operationRoom?: string;
+  
+  // Main Event Properties
+  isMainEvent?: boolean;
+  maxMiniEvents?: number;
+  miniEvents?: MiniEvent[];
 }
 
 export enum GeminiActionType {

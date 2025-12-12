@@ -5,22 +5,28 @@ import moment from 'moment';
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzeSchedule = async (groups: TimelineGroup[], items: TimelineItem[]): Promise<string> => {
+  // Construct context that includes the nested mini-events (operations)
   const scheduleContext = JSON.stringify({
     doctors: groups.map(g => ({ id: g.id, name: g.title, speciality: g.category })),
-    operations: items.map(i => ({
+    scheduleBlocks: items.map(i => ({
       doctor_id: i.group,
-      title: i.title,
-      room: i.operationRoom,
+      block_title: i.title,
       start: moment(i.start_time).format('YYYY-MM-DD HH:mm'),
       end: moment(i.end_time).format('YYYY-MM-DD HH:mm'),
-      details: i.description
+      operations: i.miniEvents?.map(m => ({
+          operation: m.title,
+          patient: m.patientName,
+          time: m.time,
+          room: m.operationRoom,
+          notes: m.description
+      })) || []
     }))
   });
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `You are a medical scheduling assistant for a busy hospital. Analyze the following surgery schedule and provide a brief, insightful summary of the workload, potential doctor fatigue/conflicts, and utilization of operation rooms. Keep it under 150 words.
+      contents: `You are a medical scheduling assistant for a busy hospital. Analyze the following surgery schedule blocks and the operations inside them. Provide a brief, insightful summary of the workload, potential doctor fatigue, and utilization of operation rooms. Keep it under 150 words.
       
       Schedule Data:
       ${scheduleContext}`,
@@ -47,22 +53,32 @@ export const createEventFromNaturalLanguage = async (
       Available Doctors: ${groupContext}.
       User Request: "${prompt}"
       
-      Create a JSON object for the requested operation(s). Map the operation to the most appropriate doctor based on their speciality (e.g., heart -> Cardiology).
-      Calculate start_time and end_time as Unix timestamps (numbers) based on the "Current Time".
-      If the duration isn't specified, assume 2 hours for standard operations.
-      Assign a realistic Operation Room (OR-1 to OR-4) if not specified.
+      Create a "Main Event Block" (a container) for the requested operation(s) and assign it to the most appropriate doctor based on speciality.
+      Place the specific operation details as a "miniEvent" inside this block.
+      The block duration should strictly cover the operation (default 4 hours for the block if not specified).
+      Assign a realistic Operation Room (OR-1 to OR-4) to the mini-event.
       
       Return a JSON object with this schema:
       {
-        "responseMessage": "A short confirmation message for the user",
+        "responseMessage": "Short confirmation message",
         "items": [
           {
-            "title": "Operation Title",
-            "group": 1, // The ID of the doctor
+            "title": "Block Title (e.g. 'Surgery Block')",
+            "group": 1, 
             "start_time": 1234567890000,
             "end_time": 1234567890000,
-            "description": "Patient details or notes",
-            "operationRoom": "OR-1"
+            "description": "Block notes",
+            "isMainEvent": true,
+            "maxMiniEvents": 5,
+            "miniEvents": [
+               {
+                 "title": "Operation Name",
+                 "patientName": "Patient Name (infer or use placeholder)",
+                 "time": "HH:mm",
+                 "operationRoom": "OR-1",
+                 "description": "Details"
+               }
+            ]
           }
         ]
       }`,
@@ -82,7 +98,21 @@ export const createEventFromNaturalLanguage = async (
                   start_time: { type: Type.NUMBER },
                   end_time: { type: Type.NUMBER },
                   description: { type: Type.STRING },
-                  operationRoom: { type: Type.STRING }
+                  isMainEvent: { type: Type.BOOLEAN },
+                  maxMiniEvents: { type: Type.NUMBER },
+                  miniEvents: {
+                    type: Type.ARRAY,
+                    items: {
+                       type: Type.OBJECT,
+                       properties: {
+                          title: { type: Type.STRING },
+                          patientName: { type: Type.STRING },
+                          time: { type: Type.STRING },
+                          operationRoom: { type: Type.STRING },
+                          description: { type: Type.STRING },
+                       }
+                    }
+                  }
                 }
               }
             }
@@ -96,10 +126,19 @@ export const createEventFromNaturalLanguage = async (
     // Assign random IDs and apply doctor's specific color
     const newItemsWithIds = (result.items || []).map((item: any) => {
       const assignedGroup = groups.find(g => g.id === item.group);
+      
+      // Process miniEvents to add IDs
+      const processedMiniEvents = (item.miniEvents || []).map((m: any) => ({
+          ...m,
+          id: Math.random().toString(36).substr(2, 9)
+      }));
+
       return {
         ...item,
         id: Math.floor(Math.random() * 100000) + 1000,
-        className: assignedGroup ? assignedGroup.eventClassName : 'bg-slate-500 text-white'
+        className: assignedGroup ? assignedGroup.eventClassName : 'bg-slate-500 text-white',
+        isMainEvent: true, // Force main event
+        miniEvents: processedMiniEvents
       };
     });
 

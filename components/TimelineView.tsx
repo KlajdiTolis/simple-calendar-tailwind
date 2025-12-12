@@ -7,7 +7,6 @@ interface TimelineViewProps {
   items: TimelineItem[];
   onItemMove: (itemId: number, newStartTime: number, newGroupId: number) => void;
   onItemSelect: (item: TimelineItem) => void;
-  onBackgroundClick: (groupId: number, time: number) => void;
 }
 
 const HOUR_WIDTH = 100; // px per hour
@@ -19,17 +18,27 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   groups, 
   items, 
   onItemMove, 
-  onItemSelect,
-  onBackgroundClick
+  onItemSelect
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
 
   const [viewStart, setViewStart] = useState(moment().startOf('day')); // Start at 00:00
-  
+  const [filterText, setFilterText] = useState('');
+
   const totalHours = 24; // Show 24 hours
   const totalWidth = totalHours * HOUR_WIDTH;
+
+  // Filter groups based on search text
+  const filteredGroups = useMemo(() => {
+      if (!filterText.trim()) return groups;
+      const lowerFilter = filterText.toLowerCase();
+      return groups.filter(g => 
+        g.title.toLowerCase().includes(lowerFilter) || 
+        g.category.toLowerCase().includes(lowerFilter)
+      );
+  }, [groups, filterText]);
 
   // Generate hour markers
   const hours = useMemo(() => {
@@ -58,23 +67,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     return diffHours * HOUR_WIDTH;
   };
 
-  const handleGridClick = (e: React.MouseEvent) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const groupIndex = Math.floor(y / GROUP_HEIGHT);
-      if (groupIndex < 0 || groupIndex >= groups.length) return;
-
-      const clickTimeMs = viewStart.valueOf() + (x / HOUR_WIDTH) * 60 * 60 * 1000;
-      
-      // Snap to nearest 30m
-      const snapMs = 30 * 60 * 1000;
-      const roundedTime = Math.round(clickTimeMs / snapMs) * snapMs;
-
-      onBackgroundClick(groups[groupIndex].id, roundedTime);
-  };
-
   return (
     <div className="flex flex-col h-full bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden select-none" ref={containerRef}>
       {/* Header Controls */}
@@ -93,9 +85,22 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
       {/* Timeline Header Row */}
       <div className="flex border-b border-slate-200 bg-slate-50 relative z-20 shadow-sm">
-        <div className="flex-none border-r border-slate-200 p-2 font-bold text-slate-500 text-xs uppercase tracking-wider flex items-center justify-center bg-slate-50" style={{ width: SIDEBAR_WIDTH, height: HEADER_HEIGHT }}>
-          Doctors
+        {/* Doctors Filter Column */}
+        <div className="flex-none border-r border-slate-200 px-3 py-2 flex items-center justify-center bg-slate-50" style={{ width: SIDEBAR_WIDTH, height: HEADER_HEIGHT }}>
+            <div className="relative w-full">
+                <input 
+                    type="text" 
+                    placeholder="Filter Doctors..." 
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    className="w-full pl-8 pr-2 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white placeholder-slate-400 text-slate-700"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-2 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
         </div>
+        
         <div className="flex-1 overflow-hidden relative" ref={headerRef}>
           <div className="flex" style={{ width: totalWidth, height: HEADER_HEIGHT }}>
             {hours.map((h, i) => (
@@ -111,19 +116,25 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       <div className="flex-1 flex overflow-y-auto relative">
         {/* Sidebar */}
         <div className="flex-none bg-white border-r border-slate-200 z-10 sticky left-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] h-min">
-          {groups.map((group) => (
-            <div 
-              key={group.id} 
-              className="flex items-center px-4 border-b border-slate-100 bg-white"
-              style={{ height: GROUP_HEIGHT, width: SIDEBAR_WIDTH }}
-            >
-              <div className={`w-3 h-3 rounded-full mr-3 shadow-sm ${group.color.split(' ')[0].replace('bg-', 'bg-')}`}></div>
-              <div>
-                <div className="text-sm font-bold text-slate-700 truncate w-40">{group.title}</div>
-                <div className="text-xs text-slate-400 font-medium">{group.category}</div>
-              </div>
-            </div>
-          ))}
+          {filteredGroups.length > 0 ? (
+              filteredGroups.map((group) => (
+                <div 
+                  key={group.id} 
+                  className="flex items-center px-4 border-b border-slate-100 bg-white"
+                  style={{ height: GROUP_HEIGHT, width: SIDEBAR_WIDTH }}
+                >
+                  <div className={`w-3 h-3 rounded-full mr-3 shadow-sm ${group.color.split(' ')[0].replace('bg-', 'bg-')}`}></div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-700 truncate w-36" title={group.title}>{group.title}</div>
+                    <div className="text-xs text-slate-400 font-medium">{group.category}</div>
+                  </div>
+                </div>
+              ))
+          ) : (
+             <div className="p-4 text-center text-xs text-slate-400 italic" style={{ width: SIDEBAR_WIDTH }}>
+                 No doctors found
+             </div>
+          )}
           {/* Fill remaining sidebar space */}
           <div className="flex-1 bg-slate-50/30"></div>
         </div>
@@ -136,7 +147,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         >
           <div 
             style={{ width: totalWidth, minHeight: '100%', position: 'relative' }}
-            onMouseDown={handleGridClick}
           >
             
             {/* Background Grid */}
@@ -150,7 +160,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                 />
               ))}
               {/* Horizontal Lines */}
-              {groups.map((_, i) => (
+              {filteredGroups.map((_, i) => (
                 <div 
                     key={`h-${i}`} 
                     className="absolute left-0 right-0 border-b border-slate-200/50" 
@@ -168,8 +178,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
             {/* Items */}
             {items.map(item => {
-              const groupIndex = groups.findIndex(g => g.id === item.group);
-              if (groupIndex === -1) return null;
+              // Find index in filtered groups
+              const groupIndex = filteredGroups.findIndex(g => g.id === item.group);
+              if (groupIndex === -1) return null; // Hide item if group is filtered out
 
               const left = timeToPixels(item.start_time);
               const top = groupIndex * GROUP_HEIGHT + 8; 
@@ -182,7 +193,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                 <div
                   key={item.id}
                   onClick={(e) => { e.stopPropagation(); onItemSelect(item); }}
-                  className={`absolute rounded-lg px-2 py-1.5 text-xs text-white overflow-hidden shadow-sm transition-all cursor-pointer border-l-4 group z-10 hover:shadow-md hover:brightness-105
+                  className={`absolute rounded-lg px-2 py-1.5 text-xs text-white overflow-hidden shadow-sm transition-all cursor-pointer border-l-4 group z-10 hover:shadow-md hover:brightness-105 flex flex-col
                     ${item.className || 'bg-blue-500 border-blue-700'} 
                   `}
                   style={{
@@ -192,25 +203,30 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                     height: `${GROUP_HEIGHT - 16}px`
                   }}
                 >
-                  <div className="flex flex-col h-full relative">
-                      {/* Title */}
-                      <div className="font-bold truncate text-sm leading-tight drop-shadow-md pr-2">{item.title}</div>
-                      
-                      {/* Footer Info */}
-                      <div className="mt-auto flex justify-between items-end">
-                         <div className="opacity-90 truncate text-[10px] font-medium flex items-center gap-1">
-                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                             {moment(item.start_time).format('HH:mm')} - {moment(item.end_time).format('HH:mm')}
-                         </div>
-                      </div>
-
-                      {/* Operation Room Badge */}
-                      {item.operationRoom && (
-                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/20 border border-white/30 backdrop-blur-sm shadow-sm uppercase tracking-wider">
-                              {item.operationRoom}
+                  {/* Title Area */}
+                  <div className="font-bold truncate text-sm leading-tight drop-shadow-md pr-8 flex justify-between items-start relative">
+                      <span className="truncate">{item.title}</span>
+                      {item.isMainEvent && (
+                          <div className="absolute -top-0 -right-0 px-2.5 py-1 rounded-bl-xl rounded-tr-sm bg-black/20 text-small font-bold backdrop-blur-sm shadow-sm border-l border-b border-white/10">
+                              {item.miniEvents?.length || 0} / {item.maxMiniEvents}
                           </div>
                       )}
                   </div>
+                  
+                  {/* Footer Info */}
+                  <div className="mt-auto flex justify-between items-end">
+                     <div className="opacity-90 truncate text-[10px] font-medium flex items-center gap-1">
+                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                         {moment(item.start_time).format('HH:mm')} - {moment(item.end_time).format('HH:mm')}
+                     </div>
+                  </div>
+
+                  {/* Operation Room Badge */}
+                  {item.operationRoom && !item.isMainEvent && (
+                      <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/20 border border-white/30 backdrop-blur-sm shadow-sm uppercase tracking-wider">
+                          {item.operationRoom}
+                      </div>
+                  )}
                 </div>
               );
             })}

@@ -7,15 +7,16 @@ interface CalendarViewProps {
   items: TimelineItem[];
   viewMode: 'month' | 'week';
   onItemSelect: (item: TimelineItem) => void;
-  onDateClick: (date: moment.Moment) => void;
+  // onDateClick removed to prevent creation
+  onDateClick: (date: moment.Moment) => void; 
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({ 
   items, 
   groups,
   viewMode,
-  onItemSelect,
-  onDateClick
+  onItemSelect
+  // onDateClick unused
 }) => {
   const [currentDate, setCurrentDate] = useState(moment());
 
@@ -108,8 +109,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           return (
             <div 
               key={dayItem.format('YYYY-MM-DD')}
-              onClick={() => onDateClick(dayItem)}
-              className={`bg-white p-2 transition-colors hover:bg-slate-50 cursor-pointer flex flex-col gap-1 ${
+              className={`bg-white p-2 transition-colors flex flex-col gap-1 ${
                   !isCurrentMonth ? 'bg-slate-50/50 text-slate-400' : ''
               }`}
             >
@@ -128,19 +128,26 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                      <div 
                        key={event.id}
                        onClick={(e) => { e.stopPropagation(); onItemSelect(event); }}
-                       className={`text-xs p-2 rounded-md border-l-4 shadow-sm cursor-pointer hover:shadow-md hover:translate-x-0.5 transition-all flex flex-col group ${event.className || 'bg-blue-100 border-blue-500 text-blue-900'}`}
+                       className={`relative text-xs p-2 rounded-md border-l-4 shadow-sm cursor-pointer hover:shadow-md hover:translate-x-0.5 transition-all flex flex-col group ${event.className || 'bg-blue-100 border-blue-500 text-blue-900'}`}
                      >
+                       {/* Counter Badge on Top Right for Main Events */}
+                       {event.isMainEvent && (
+                           <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-black/20 text-white font-bold text-[8px] leading-none shadow-sm backdrop-blur-sm z-10">
+                                {event.miniEvents?.length || 0}/{event.maxMiniEvents}
+                           </div>
+                       )}
+
                        {/* Resource Title */}
-                       <div className="text-[9px] font-bold uppercase tracking-wider opacity-70 mb-0.5 truncate">
-                         {group?.title || 'Unknown Dr.'}
+                       <div className="text-[9px] font-bold uppercase tracking-wider opacity-70 mb-0.5 truncate pr-8">
+                           {group?.title || 'Unknown Dr.'}
                        </div>
                        
                        {/* Event Title */}
-                       <span className="truncate font-bold text-sm leading-tight">{event.title}</span>
+                       <span className="truncate font-bold text-sm leading-tight pr-2">{event.title}</span>
                        
                        <div className="flex justify-between items-end mt-1.5">
                             <span className="text-[10px] opacity-80 font-medium">{moment(event.start_time).format('h:mma')}</span>
-                            {event.operationRoom && (
+                            {event.operationRoom && !event.isMainEvent && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm bg-white/30 border border-white/20">
                                     {event.operationRoom}
                                 </span>

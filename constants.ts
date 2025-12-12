@@ -52,31 +52,76 @@ export const INITIAL_ITEMS: TimelineItem[] = [
   {
     id: 1,
     group: 1,
-    title: 'Appendectomy',
+    title: 'Doctor Schedule',
     start_time: now.clone().add(-2, 'hour').valueOf(),
-    end_time: now.clone().add(1, 'hour').valueOf(),
-    description: 'Patient: John Doe (45M). Routine appendectomy.',
+    end_time: now.clone().add(3, 'hour').valueOf(),
+    description: 'Scheduled morning operations.',
     className: 'bg-blue-600 text-white border-blue-700',
-    operationRoom: 'OR-1'
+    isMainEvent: true,
+    maxMiniEvents: 4,
+    miniEvents: [
+      {
+        id: 'init-1',
+        title: 'Appendectomy',
+        patientName: 'John Doe (45M)',
+        startTime: now.clone().add(-1, 'hour').format('HH:mm'),
+        endTime: now.clone().add(0, 'hour').format('HH:mm'),
+        operationRoom: 'OR-1',
+        description: 'Routine appendectomy.'
+      },
+      {
+        id: 'init-2',
+        title: 'Hernia Repair',
+        patientName: 'Mike Ross (32M)',
+        startTime: now.clone().add(1, 'hour').format('HH:mm'),
+        endTime: now.clone().add(2, 'hour').format('HH:mm'),
+        operationRoom: 'OR-1',
+        description: 'Inguinal hernia.'
+      }
+    ]
   },
   {
     id: 2,
     group: 2,
-    title: 'Coronary Bypass',
+    title: 'Cardio Block',
     start_time: now.clone().add(1, 'day').valueOf(),
-    end_time: now.clone().add(1, 'day').add(4, 'hour').valueOf(),
-    description: 'Patient: Jane Smith (62F). Triple bypass.',
+    end_time: now.clone().add(1, 'day').add(5, 'hour').valueOf(),
+    description: 'Major cardiac procedures.',
     className: 'bg-red-600 text-white border-red-700',
-    operationRoom: 'OR-3'
+    isMainEvent: true,
+    maxMiniEvents: 2,
+    miniEvents: [
+      {
+        id: 'init-3',
+        title: 'Coronary Bypass',
+        patientName: 'Jane Smith (62F)',
+        startTime: now.clone().add(1, 'day').add(0.5, 'hour').format('HH:mm'),
+        endTime: now.clone().add(1, 'day').add(3.5, 'hour').format('HH:mm'),
+        operationRoom: 'OR-3',
+        description: 'Triple bypass.'
+      }
+    ]
   },
   {
     id: 3,
     group: 4,
-    title: 'Knee Replacement',
+    title: 'Ortho Surgery Block',
     start_time: now.clone().add(2, 'day').valueOf(),
-    end_time: now.clone().add(2, 'day').add(2, 'hour').valueOf(),
-    description: 'Patient: Robert Brown (70M). Left knee.',
+    end_time: now.clone().add(2, 'day').add(4, 'hour').valueOf(),
+    description: 'Joint replacements.',
     className: 'bg-green-600 text-white border-green-700',
-    operationRoom: 'OR-2'
+    isMainEvent: true,
+    maxMiniEvents: 3,
+    miniEvents: [
+      {
+        id: 'init-4',
+        title: 'Knee Replacement',
+        patientName: 'Robert Brown (70M)',
+        startTime: now.clone().add(2, 'day').add(1, 'hour').format('HH:mm'),
+        endTime: now.clone().add(2, 'day').add(3, 'hour').format('HH:mm'),
+        operationRoom: 'OR-2',
+        description: 'Left knee.'
+      }
+    ]
   },
 ];

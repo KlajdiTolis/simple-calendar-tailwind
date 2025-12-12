@@ -25,20 +25,7 @@ const App = () => {
 
   const toggleAssistant = () => setIsAssistantOpen(!isAssistantOpen);
 
-  const handleTimelineBackgroundClick = (groupId: number, time: number) => {
-      const clickedMoment = moment(time);
-      setCreateModalDate(clickedMoment);
-      setPreselectedGroupId(groupId);
-      setPreselectedTime(clickedMoment.format('HH:mm'));
-      setIsCreateModalOpen(true);
-  };
-
-  const handleCalendarDateClick = (date: moment.Moment) => {
-      setCreateModalDate(date);
-      setPreselectedGroupId(undefined);
-      setPreselectedTime('09:00');
-      setIsCreateModalOpen(true);
-  };
+  // Removed click-to-create handlers as per request to only allow creation via button.
 
   const handleCreateEvent = (newItem: Partial<TimelineItem>) => {
     const event: TimelineItem = {
@@ -49,7 +36,10 @@ const App = () => {
       end_time: newItem.end_time!,
       description: newItem.description,
       className: newItem.className,
-      operationRoom: newItem.operationRoom
+      operationRoom: newItem.operationRoom,
+      isMainEvent: newItem.isMainEvent,
+      maxMiniEvents: newItem.maxMiniEvents,
+      miniEvents: newItem.miniEvents || []
     };
     setItems(prev => [...prev, event]);
   };
@@ -141,7 +131,7 @@ const App = () => {
                 className="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm items-center gap-2"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                Schedule Operation
+                Doctors Availability
             </button>
             <button 
                 onClick={toggleAssistant}
@@ -169,7 +159,6 @@ const App = () => {
                     items={items}
                     onItemSelect={handleEventSelect}
                     onItemMove={handleItemMove}
-                    onBackgroundClick={handleTimelineBackgroundClick}
                   />
                 ) : (
                   <CalendarView 
@@ -177,7 +166,7 @@ const App = () => {
                     groups={INITIAL_GROUPS}
                     viewMode={viewMode}
                     onItemSelect={handleEventSelect}
-                    onDateClick={handleCalendarDateClick}
+                    onDateClick={() => {}} // No-op as we disabled creation on date click
                   />
                 )}
             </div>
